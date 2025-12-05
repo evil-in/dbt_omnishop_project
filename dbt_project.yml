@@ -40,13 +40,12 @@ models:
     +persist_docs:
       relation: true
       columns: true
-    # Applies to all files under models/example/
-    example:
-      +materialized: table
     staging:
-      +materialized: table
-    marts:
       +materialized: view
+      +schema: STG
+    marts:
+      +materialized: table
+      +schema: MARTS
 
 # Define project-level variables
 vars:

@@ -12,6 +12,7 @@ sources:
             warn_after: {count: 1, period: hour}
             error_after: {count: 3, period: hour}
       - name: inventory_raw
+        description: Raw source table for inventory data
       - name: orders_raw
         description: Raw source table for orders data
         config:
@@ -20,6 +21,7 @@ sources:
             warn_after: {count: 1, period: hour}
             error_after: {count: 3, period: hour}
       - name: order_items_raw
+        description: Raw source table for order related items data
       - name: products_raw
         description: Raw source table for products data
         config:
@@ -28,3 +30,4 @@ sources:
             warn_after: {count: 1, period: hour}
             error_after: {count: 3, period: hour}
       - name: returns_raw
+        description: Raw source table for returns data
