@@ -37,6 +37,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 models:
   dbt_omnishop_project:
+    +snowflake_warehouse: ANALYTICS_WH
     +persist_docs:
       relation: true
       columns: true
@@ -50,9 +51,11 @@ models:
 # Define project-level variables
 vars:
   # Environment configuration
-  ENVIRONMENT: "{{ env_var('ENVIRONMENT', 'dev') }}"
-  DATABASE: "{{ env_var('DATABASE', 'OMNI_SHOP') }}"
+  ENVIRONMENT: DEV
+  DATABASE: OMNI_SHOP
 
   SCHEMAS:
     RAW: 'raw'
+    STAGING: 'STG'
+    MARTS: 'MARTS'
 
