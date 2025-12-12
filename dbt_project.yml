@@ -55,6 +55,6 @@ vars:
   DATABASE: OMNI_SHOP
 
   SCHEMAS:
-    RAW: 'raw'
+    RAW: 'RAW'
     STAGING: 'STG'
     MARTS: 'MARTS'
