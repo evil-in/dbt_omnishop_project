@@ -1,0 +1,1404 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: Customer dimension table containing customer attributes, segmentation, and tenure information
+    config:
+      contract:
+        enforced: true
+    
+    columns:
+      - name: CUSTOMER_SK
+        description: Surrogate key for the customer dimension (hash-based)
+        data_type: varchar(32)
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+          - not_null
+
+      - name: CUSTOMER_NK
+        description: Natural key / business identifier for the customer
+        data_type: varchar(50)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+          - unique
+
+      - name: FIRST_NAME
+        description: Customer's first name
+        data_type: varchar(100)
+
+      - name: LAST_NAME
+        description: Customer's last name
+        data_type: varchar(100)
+
+      - name: FULL_NAME
+        description: Customer's full name (concatenation of first and last name)
+        data_type: varchar(201)
+
+      - name: EMAIL_ADDRESS
+        description: Customer's email address
+        data_type: varchar(255)
+
+      - name: PHONE_NUMBER
+        description: Customer's phone number
+        data_type: varchar(20)
+
+      - name: HAS_PHONE
+        description: Flag indicating whether the customer has a phone number on file
+        data_type: boolean
+
+      - name: EMAIL_DOMAIN
+        description: Domain portion of the customer's email address
+        data_type: varchar(16777216)
+
+      - name: IS_ACTIVE
+        description: Flag indicating whether the customer is currently active
+        data_type: boolean
+
+      - name: CUSTOMER_STATUS
+        description: Current status of the customer
+        data_type: varchar(8)
+        data_tests:
+          - accepted_values:
+              values: ['ACTIVE', 'INACTIVE', 'PENDING', 'CLOSED']
+
+      - name: ACTIVITY_STATUS
+        description: Detailed activity status of the customer
+        data_type: varchar(15)
+
+      - name: SEGMENT_CODE
+        description: Code identifying the customer segment
+        data_type: varchar(50)
+
+      - name: SEGMENT_NAME
+        description: Name of the customer segment
+        data_type: varchar(9)
+
+      - name: SEGMENT_DESCRIPTION
+        description: Description of the customer segment
+        data_type: varchar(42)
+
+      - name: SEGMENT_PRIORITY
+        description: Priority ranking of the customer segment (1-9)
+        data_type: number(1,0)
+
+      - name: DISCOUNT_TIER
+        description: Discount tier assigned to the customer
+        data_type: varchar(8)
+
+      - name: SUPPORT_LEVEL
+        description: Level of support the customer is entitled to
+        data_type: varchar(9)
+
+      - name: MARKETING_OPT_IN_DEFAULT
+        description: Default marketing opt-in preference for the customer
+        data_type: boolean
+
+      - name: CUSTOMER_TENURE_DAYS
+        description: Number of days since the customer was created
+        data_type: number(9,0)
+
+      - name: TENURE_TIER_CODE
+        description: Code representing the customer's tenure tier
+        data_type: varchar(11)
+
+      - name: TENURE_TIER_NAME
+        description: Name of the customer's tenure tier
+        data_type: varchar(20)
+
+      - name: TENURE_BUCKET
+        description: Bucket/grouping for customer tenure
+        data_type: varchar(11)
+
+      - name: DAYS_SINCE_LAST_UPDATE
+        description: Number of days since the customer record was last updated
+        data_type: number(9,0)
+
+      - name: CUSTOMER_CREATED_AT
+        description: Timestamp when the customer record was originally created
+        data_type: timestamp_ntz(9)
+
+      - name: CUSTOMER_UPDATED_AT
+        description: Timestamp when the customer record was last updated
+        data_type: timestamp_ntz(9)
+
+      - name: DBT_LOADED_AT
+        description: Timestamp when the record was loaded by dbt
+        data_type: timestamp_ltz(9)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: DBT_BATCH_ID
+        description: Unique identifier for the dbt batch/run that loaded this record
+        data_type: varchar(36)
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+      - name: IS_CURRENT
+        description: Flag indicating whether this is the current version of the customer record (for SCD Type 2)
+        data_type: boolean
+        constraints:
+          - type: not_null
+        data_tests:
+          - not_null
+
+  - name: dim_products
+    description: >
+      Product dimension table containing master product data enriched with category, 
+      brand, and pricing information. This table serves as the primary source of truth 
+      for product attributes used in analytics and reporting.
+    
+    columns:
+      # Primary & Natural Keys
+      - name: PRODUCT_SK
+        description: Surrogate key (hash) uniquely identifying each product record in the dimension table.
+        data_type: VARCHAR(32)
+        tests:
+          - unique
+          - not_null
+
+      - name: PRODUCT_NK
+        description: Natural key representing the original product identifier from the source system.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      # Product Identifiers
+      - name: PRODUCT_NAME
+        description: The official name of the product as stored in the source system.
+        data_type: VARCHAR(255)
+
+      - name: PRODUCT_NAME_DISPLAY
+        description: Formatted product name optimized for display in reports and user interfaces.
+        data_type: VARCHAR(765)
+
+      # Category Attributes
+      - name: CATEGORY_CODE
+        description: Unique code identifying the product category.
+        data_type: VARCHAR(100)
+
+      - name: CATEGORY_NAME
+        description: Human-readable name of the product category.
+        data_type: VARCHAR(13)
+
+      - name: CATEGORY_DESCRIPTION
+        description: Detailed description of the product category.
+        data_type: VARCHAR(34)
+
+      - name: DEPARTMENT
+        description: Top-level department classification for the product.
+        data_type: VARCHAR(15)
+
+      - name: IS_SEASONAL_CATEGORY
+        description: Flag indicating whether the product belongs to a seasonal category.
+        data_type: BOOLEAN
+
+      - name: CATEGORY_TYPICAL_MARGIN_TIER
+        description: The typical margin tier associated with this product category (e.g., Low, Medium, High).
+        data_type: VARCHAR(7)
+
+      # Subcategory Attributes
+      - name: SUBCATEGORY_CODE
+        description: Unique code identifying the product subcategory.
+        data_type: VARCHAR(100)
+
+      - name: SUBCATEGORY_NAME
+        description: Human-readable name of the product subcategory.
+        data_type: VARCHAR(16777216)
+
+      # Brand Attributes
+      - name: BRAND_CODE
+        description: Unique code identifying the product brand.
+        data_type: VARCHAR(100)
+
+      - name: BRAND_NAME
+        description: Official name of the product brand.
+        data_type: VARCHAR(300)
+
+      - name: BRAND_TIER
+        description: Classification tier of the brand (e.g., Premium, Standard, Budget).
+        data_type: VARCHAR(12)
+
+      - name: IS_HOUSE_BRAND
+        description: Flag indicating whether the product is a house/private label brand.
+        data_type: BOOLEAN
+
+      - name: BRAND_ORIGIN_COUNTRY
+        description: Country of origin for the brand.
+        data_type: VARCHAR(11)
+
+      # Pricing Attributes
+      - name: LIST_PRICE
+        description: The standard retail/list price of the product.
+        data_type: NUMBER(12,2)
+
+      - name: COST_PRICE
+        description: The cost price or wholesale price of the product.
+        data_type: NUMBER(12,2)
+
+      - name: GROSS_MARGIN
+        description: Calculated gross margin (LIST_PRICE - COST_PRICE).
+        data_type: NUMBER(13,2)
+
+      - name: MARGIN_PERCENTAGE
+        description: Gross margin expressed as a percentage of the list price.
+        data_type: NUMBER(25,2)
+
+      # Price & Margin Tier Attributes
+      - name: PRICE_TIER_CODE
+        description: Code representing the price tier classification.
+        data_type: VARCHAR(9)
+
+      - name: PRICE_TIER_NAME
+        description: Descriptive name of the price tier (e.g., Budget, Mid-Range, Premium).
+        data_type: VARCHAR(9)
+
+      - name: MARGIN_TIER_CODE
+        description: Code representing the margin tier classification.
+        data_type: VARCHAR(8)
+
+      - name: MARGIN_TIER_NAME
+        description: Descriptive name of the margin tier.
+        data_type: VARCHAR(15)
+
+      # Profitability Flags
+      - name: IS_PROFITABLE
+        description: Flag indicating whether the product has a positive gross margin.
+        data_type: BOOLEAN
+
+      - name: IS_HIGH_MARGIN
+        description: Flag indicating whether the product meets the high margin threshold.
+        data_type: BOOLEAN
+
+      # Status & Lifecycle Attributes
+      - name: IS_ACTIVE
+        description: Flag indicating whether the product is currently active in the catalog.
+        data_type: BOOLEAN
+
+      - name: PRODUCT_STATUS
+        description: Current status of the product (e.g., Active, Inactive, Discontinued).
+        data_type: VARCHAR(8)
+
+      - name: PRODUCT_AGE_DAYS
+        description: Number of days since the product was created.
+        data_type: NUMBER(9,0)
+
+      - name: DAYS_SINCE_UPDATE
+        description: Number of days since the product record was last updated.
+        data_type: NUMBER(9,0)
+
+      - name: PRODUCT_LIFECYCLE_STAGE
+        description: Current lifecycle stage of the product (e.g., New, Growth, Mature, Decline).
+        data_type: VARCHAR(11)
+
+      # Source System Timestamps
+      - name: PRODUCT_CREATED_AT
+        description: Timestamp when the product was originally created in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: PRODUCT_UPDATED_AT
+        description: Timestamp when the product was last updated in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+      # DBT Metadata
+      - name: DBT_LOADED_AT
+        description: Timestamp when the record was loaded into the data warehouse by DBT.
+        data_type: TIMESTAMP_LTZ(9)
+
+      - name: DBT_BATCH_ID
+        description: Unique identifier for the DBT batch/run that loaded this record.
+        data_type: VARCHAR(36)
+
+      - name: IS_CURRENT
+        description: Flag indicating whether this is the current/latest version of the product record (used for SCD Type 2 tracking).
+        data_type: BOOLEAN
+
+  - name: stg_orders
+    description: Staging table for orders containing order details, payment information, and channel attributes
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: ORDER_ID
+        data_type: varchar(50)
+        description: Unique identifier for the order
+        constraints:
+          - type: not_null
+
+      - name: ORDER_NUMBER
+        data_type: varchar(50)
+        description: Business-facing order number
+        constraints:
+          - type: not_null
+
+      - name: CUSTOMER_ID
+        data_type: varchar(50)
+        description: Identifier linking to the customer who placed the order
+        constraints:
+          - type: not_null
+
+      - name: ORDER_DATE
+        data_type: timestamp_ntz(9)
+        description: Timestamp when the order was placed
+
+      - name: ORDER_DATE_DAY
+        data_type: date
+        description: Date portion of the order timestamp
+
+      - name: ORDER_STATUS
+        data_type: varchar(50)
+        description: Current status of the order
+        constraints:
+          - type: not_null
+
+      - name: SALES_CHANNEL
+        data_type: varchar(50)
+        description: Channel through which the sale was made
+        constraints:
+          - type: not_null
+
+      - name: PAYMENT_METHOD
+        data_type: varchar(50)
+        description: Payment method used for the order
+        constraints:
+          - type: not_null
+
+      - name: PROMO_CODE
+        data_type: varchar(50)
+        description: Promotional code applied to the order
+
+      - name: HAS_PROMO_APPLIED
+        data_type: boolean
+        description: Flag indicating whether a promotion was applied to the order
+
+      - name: CURRENCY_CODE
+        data_type: varchar(10)
+        description: Currency code for the order amounts
+        constraints:
+          - type: not_null
+
+      - name: ORDER_TOTAL_AMOUNT
+        data_type: number(14,2)
+        description: Total monetary amount of the order
+        constraints:
+          - type: not_null
+
+      - name: STORE_ID
+        data_type: varchar(50)
+        description: Identifier for the store associated with the order
+
+      - name: IS_IN_STORE_ORDER
+        data_type: boolean
+        description: Flag indicating whether the order was placed in-store
+
+      - name: CHANNEL_TYPE
+        data_type: varchar(7)
+        description: Type classification of the sales channel
+        constraints:
+          - type: not_null
+
+      - name: IS_CANCELLED_OR_RETURNED
+        data_type: boolean
+        description: Flag indicating whether the order was cancelled or returned
+
+      - name: CREATED_AT
+        data_type: timestamp_ntz(9)
+        description: Timestamp when the record was created
+
+      - name: UPDATED_AT
+        data_type: timestamp_ntz(9)
+        description: Timestamp when the record was last updated
+
+  - name: fct_sales
+    description: Fact table for sales transactions containing order items with revenue, margin, and product details
+    config:
+      contract:
+        enforced: true
+      on_schema_change: fail
+    columns:
+      - name: ORDER_ITEM_ID
+        data_type: varchar(50)
+        description: Unique identifier for the order line item
+        tests:
+        - not_null
+        - relationships:
+            to: ref('stg_order_items')
+            field: order_item_id
+
+      - name: ORDER_ID
+        data_type: varchar(50)
+        description: Identifier linking to the parent order
+        tests:
+        - not_null
+        - relationships:
+            to: ref('stg_orders')
+            field: order_id
+
+      - name: PRODUCT_ID
+        data_type: varchar(50)
+        description: Identifier linking to the product
+        tests:
+        - not_null
+        - relationships:
+            to: ref('dim_products')
+            field: product_nk
+
+      - name: CUSTOMER_ID
+        data_type: varchar(50)
+        description: Identifier linking to the customer
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_nk
+
+      - name: ORDER_DATE
+        data_type: timestamp_ntz(9)
+        description: Timestamp when the order was placed
+
+      - name: ORDER_DATE_DAY
+        data_type: date
+        description: Date portion of the order timestamp
+
+      - name: ORDER_STATUS
+        data_type: varchar(50)
+        description: Current status of the order
+        tests:
+         - accepted_values:
+            values:
+              - placed
+              - shipped
+              - cancelled
+              - returned
+
+      - name: SALES_CHANNEL
+        data_type: varchar(50)
+        description: Channel through which the sale was made
+
+      - name: CHANNEL_TYPE
+        data_type: varchar(7)
+        description: Type classification of the sales channel
+
+      - name: PAYMENT_METHOD
+        data_type: varchar(50)
+        description: Payment method used for the order
+        tests:
+          - accepted_values:
+              values:
+                - card
+                - upi
+                - net_banking
+                - cod
+
+      - name: PROMO_CODE
+        data_type: varchar(50)
+        description: Promotional code applied to the order
+
+      - name: HAS_PROMO_APPLIED
+        data_type: boolean
+        description: Flag indicating whether a promotion was applied
+
+      - name: CURRENCY_CODE
+        data_type: varchar(10)
+        description: Currency code for monetary amounts
+
+      - name: STORE_ID
+        data_type: varchar(50)
+        description: Identifier for the store associated with the order
+
+      - name: IS_IN_STORE_ORDER
+        data_type: boolean
+        description: Flag indicating whether the order was placed in-store
+
+      - name: IS_CANCELLED_OR_RETURNED
+        data_type: boolean
+        description: Flag indicating whether the order was cancelled or returned
+
+      - name: PRODUCT_NAME
+        data_type: varchar(255)
+        description: Name of the product sold
+
+      - name: CATEGORY
+        data_type: varchar(100)
+        description: Product category
+
+      - name: SUBCATEGORY
+        data_type: varchar(100)
+        description: Product subcategory
+
+      - name: BRAND
+        data_type: varchar(100)
+        description: Brand of the product
+
+      - name: REVENUE
+        data_type: number(14,2)
+        description: Revenue amount for the line item
+
+      - name: DISCOUNT
+        data_type: number(14,2)
+        description: Discount amount applied to the line item
+
+      - name: MARGIN
+        data_type: number(38,2)
+        description: Profit margin for the line item
+
+      - name: QUANTITY
+        data_type: number(38,0)
+        description: Quantity of items sold
+
+      - name: UNIT_PRICE
+        data_type: number(14,2)
+        description: Price per unit of the product
+
+      - name: GROSS_AMOUNT
+        data_type: number(38,2)
+        description: Gross amount before discounts
+
+      - name: TOTAL_COST
+        data_type: number(38,2)
+        description: Total cost of goods sold
+
+      - name: DISCOUNT_PERCENTAGE
+        data_type: number(26,2)
+        description: Discount as a percentage of the gross amount
+
+      - name: MARGIN_PERCENTAGE
+        data_type: number(38,2)
+        description: Margin as a percentage of revenue
+
+      - name: HAS_DISCOUNT
+        data_type: boolean
+        description: Flag indicating whether a discount was applied
+
+      - name: ORDER_UPDATED_AT
+        data_type: timestamp_ntz(9)
+        description: Timestamp when the order was last updated
+
+      - name: ITEM_UPDATED_AT
+        data_type: timestamp_ntz(9)
+        description: Timestamp when the order item was last updated
+
+      - name: LAST_UPDATED_AT
+        data_type: timestamp_ntz(9)
+        description: Most recent update timestamp across order and item
+
+  - name: fct_customer_lifetime_value
+    description: >
+      Fact table capturing comprehensive customer lifetime value (CLV) metrics and behavioral 
+      patterns. This table aggregates all historical transaction data at the customer level to 
+      provide a 360-degree view of customer value, purchasing behavior, and engagement metrics. 
+      Used for customer segmentation, retention analysis, and marketing optimization.
+    
+    meta:
+      owner: data_team
+      schema: OMNI_SHOP.MARTS
+
+    columns:
+      # Primary Key
+      - name: CUSTOMER_ID
+        description: Unique identifier for the customer. Primary key for this table.
+        data_type: VARCHAR(50)
+        tests:
+          - unique
+          - not_null
+
+      # Lifetime Value Metrics
+      - name: LIFETIME_VALUE_GROSS
+        description: Total gross lifetime value of the customer, calculated as the sum of all revenue before accounting for cancellations or returns.
+        data_type: NUMBER(27,2)
+
+      - name: LIFETIME_VALUE_NET
+        description: Net lifetime value of the customer after accounting for cancellations, returns, and refunds.
+        data_type: NUMBER(27,2)
+
+      # Revenue Metrics
+      - name: TOTAL_REVENUE
+        description: Total gross revenue generated by the customer across all orders.
+        data_type: NUMBER(26,2)
+
+      - name: TOTAL_DISCOUNTS
+        description: Total gross discount amount applied across all customer orders.
+        data_type: NUMBER(26,2)
+
+      - name: NET_REVENUE
+        description: Net revenue after excluding cancelled orders and returns.
+        data_type: NUMBER(26,2)
+
+      - name: NET_DISCOUNTS
+        description: Net discount amount after excluding cancelled orders and returns.
+        data_type: NUMBER(26,2)
+
+      # Margin & Cost Metrics
+      - name: TOTAL_MARGIN
+        description: Total gross margin generated from all customer transactions.
+        data_type: NUMBER(38,2)
+
+      - name: NET_MARGIN
+        description: Net margin after accounting for cancellations and returns.
+        data_type: NUMBER(38,2)
+
+      - name: TOTAL_COST
+        description: Total cost of goods sold (COGS) for all products purchased by the customer.
+        data_type: NUMBER(38,2)
+
+      # Quantity Metrics
+      - name: TOTAL_QUANTITY
+        description: Total number of items ordered by the customer (including cancelled items).
+        data_type: NUMBER(38,0)
+
+      - name: NET_QUANTITY
+        description: Net number of items after excluding cancelled orders and returns.
+        data_type: NUMBER(38,0)
+
+      - name: TOTAL_GROSS_AMOUNT
+        description: Total gross transaction amount across all customer orders.
+        data_type: NUMBER(38,2)
+
+      # Order Count Metrics
+      - name: TOTAL_ORDER_COUNT
+        description: Total number of orders placed by the customer (including cancelled orders).
+        data_type: NUMBER(18,0)
+
+      - name: NET_ORDER_COUNT
+        description: Net number of orders excluding cancelled orders.
+        data_type: NUMBER(18,0)
+
+      - name: CANCELLED_ORDER_COUNT
+        description: Number of orders that were cancelled by the customer.
+        data_type: NUMBER(18,0)
+
+      - name: TOTAL_ITEM_COUNT
+        description: Total count of distinct line items across all orders.
+        data_type: NUMBER(18,0)
+
+      # Customer Timeline Attributes
+      - name: FIRST_ORDER_DATE
+        description: Timestamp of the customer's first order.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: LAST_ORDER_DATE
+        description: Timestamp of the customer's most recent order.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: FIRST_ORDER_DAY
+        description: Date (day) of the customer's first order.
+        data_type: DATE
+
+      - name: LAST_ORDER_DAY
+        description: Date (day) of the customer's most recent order.
+        data_type: DATE
+
+      - name: CUSTOMER_TENURE_DAYS
+        description: Number of days since the customer's first order (customer age/tenure).
+        data_type: NUMBER(9,0)
+
+      - name: DAYS_SINCE_LAST_ORDER
+        description: Number of days since the customer's most recent order. Used for recency analysis and churn prediction.
+        data_type: NUMBER(9,0)
+
+      # Channel Metrics
+      - name: ONLINE_ORDER_COUNT
+        description: Number of orders placed through online channels (web, mobile app).
+        data_type: NUMBER(18,0)
+
+      - name: OFFLINE_ORDER_COUNT
+        description: Number of orders placed through offline channels (in-store, phone).
+        data_type: NUMBER(18,0)
+
+      - name: ONLINE_REVENUE
+        description: Total revenue generated from online channel orders.
+        data_type: NUMBER(26,2)
+
+      - name: OFFLINE_REVENUE
+        description: Total revenue generated from offline channel orders.
+        data_type: NUMBER(26,2)
+
+      - name: PREFERRED_CHANNEL
+        description: The customer's preferred shopping channel based on order frequency (e.g., Online, Offline, Omnichannel).
+        data_type: VARCHAR(11)
+
+      # Promotional Behavior Metrics
+      - name: PROMO_ORDER_COUNT
+        description: Number of orders that included at least one promotional item or discount.
+        data_type: NUMBER(18,0)
+
+      - name: DISCOUNTED_ITEM_COUNT
+        description: Total count of items purchased with a discount applied.
+        data_type: NUMBER(18,0)
+
+      # Purchase Diversity Metrics
+      - name: UNIQUE_CATEGORIES_PURCHASED
+        description: Number of distinct product categories the customer has purchased from.
+        data_type: NUMBER(18,0)
+
+      - name: PRIMARY_CURRENCY
+        description: The primary currency used for the customer's transactions.
+        data_type: VARCHAR(10)
+
+      # Calculated Average Metrics
+      - name: AVG_ORDER_VALUE
+        description: Average order value calculated as total revenue divided by total order count.
+        data_type: NUMBER(34,2)
+
+      - name: AVG_ITEMS_PER_ORDER
+        description: Average number of items per order.
+        data_type: NUMBER(38,2)
+
+      # Calculated Rate Metrics
+      - name: MARGIN_PERCENTAGE
+        description: Overall margin percentage calculated as (total margin / total revenue) * 100.
+        data_type: NUMBER(38,2)
+
+      - name: DISCOUNT_PERCENTAGE
+        description: Overall discount percentage calculated as (total discounts / total gross amount) * 100.
+        data_type: NUMBER(38,2)
+
+      - name: CANCELLATION_RATE
+        description: Order cancellation rate calculated as (cancelled orders / total orders) * 100.
+        data_type: NUMBER(38,2)
+
+      - name: PROMO_USAGE_RATE
+        description: Promotional usage rate calculated as (promo orders / total orders) * 100.
+        data_type: NUMBER(38,2)
+
+      - name: ORDERS_PER_MONTH
+        description: Average number of orders placed per month based on customer tenure.
+        data_type: NUMBER(38,2)
+
+      # Segmentation
+      - name: CUSTOMER_ORDER_SEGMENT
+        description: Customer segment based on order frequency and value (e.g., VIP, Regular, New, At-Risk, Churned).
+        data_type: VARCHAR(8)
+        tests:
+          - accepted_values:
+              values: ['VIP', 'Regular', 'New', 'At-Risk', 'Churned', 'Inactive']
+              config:
+                severity: warn
+
+      # Metadata
+      - name: LAST_UPDATED_AT
+        description: Timestamp when this customer record was last updated/refreshed.
+        data_type: TIMESTAMP_NTZ(9)
+
+  - name: fct_daily_revenue
+    description: >
+      Daily revenue fact table aggregating sales metrics by date and sales channel. 
+      This table provides a comprehensive view of daily business performance including 
+      revenue, margins, discounts, and order counts. Used for daily sales reporting, 
+      channel performance analysis, and trend monitoring.
+    
+    meta:
+      owner: data_team
+      schema: OMNI_SHOP.MARTS
+      grain: One row per day per sales channel
+
+    columns:
+      # Primary Key
+      - name: DAILY_CHANNEL_KEY
+        description: Surrogate key (hash) uniquely identifying each day-channel combination. Composite of ORDER_DATE_DAY and SALES_CHANNEL.
+        data_type: VARCHAR(32)
+        tests:
+          - unique
+          - not_null
+
+      # Date Dimensions
+      - name: ORDER_DATE_DAY
+        description: The calendar date for the aggregated revenue metrics.
+        data_type: DATE
+        tests:
+          - not_null
+
+      - name: REVENUE_YEAR
+        description: Four-digit year extracted from the order date.
+        data_type: NUMBER(4,0)
+
+      - name: REVENUE_MONTH
+        description: Month number (1-12) extracted from the order date.
+        data_type: NUMBER(2,0)
+
+      - name: REVENUE_WEEK
+        description: Week number of the year (1-52/53) extracted from the order date.
+        data_type: NUMBER(2,0)
+
+      - name: DAY_OF_WEEK
+        description: Day of week number (1-7) extracted from the order date.
+        data_type: NUMBER(2,0)
+
+      # Channel Dimensions
+      - name: SALES_CHANNEL
+        description: Specific sales channel identifier (e.g., Web, Mobile App, Retail Store, Phone).
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      - name: CHANNEL_TYPE
+        description: High-level channel classification (e.g., Online, Offline).
+        data_type: VARCHAR(7)
+
+      - name: CURRENCY_CODE
+        description: ISO currency code for the revenue figures (e.g., USD, EUR, GBP).
+        data_type: VARCHAR(10)
+
+      # Gross Revenue Metrics
+      - name: TOTAL_REVENUE
+        description: Total gross revenue for the day-channel combination before cancellations.
+        data_type: NUMBER(26,2)
+
+      - name: TOTAL_GROSS_AMOUNT
+        description: Total gross transaction amount before discounts and cancellations.
+        data_type: NUMBER(38,2)
+
+      - name: TOTAL_DISCOUNT
+        description: Total discount amount applied across all orders for the day-channel.
+        data_type: NUMBER(26,2)
+
+      - name: TOTAL_MARGIN
+        description: Total gross margin (revenue minus cost) before cancellations.
+        data_type: NUMBER(38,2)
+
+      - name: TOTAL_COST
+        description: Total cost of goods sold (COGS) for all items sold.
+        data_type: NUMBER(38,2)
+
+      - name: TOTAL_QUANTITY
+        description: Total quantity of items ordered (including cancelled items).
+        data_type: NUMBER(38,0)
+
+      # Net Revenue Metrics (Excluding Cancellations)
+      - name: NET_REVENUE
+        description: Net revenue after excluding cancelled orders.
+        data_type: NUMBER(26,2)
+
+      - name: NET_MARGIN
+        description: Net margin after excluding cancelled orders.
+        data_type: NUMBER(38,2)
+
+      - name: NET_QUANTITY
+        description: Net quantity of items after excluding cancelled orders.
+        data_type: NUMBER(38,0)
+
+      # Cancelled Metrics
+      - name: CANCELLED_REVENUE
+        description: Revenue lost due to order cancellations.
+        data_type: NUMBER(26,2)
+
+      - name: CANCELLED_QUANTITY
+        description: Quantity of items from cancelled orders.
+        data_type: NUMBER(38,0)
+
+      # Order Count Metrics
+      - name: TOTAL_ORDER_COUNT
+        description: Total number of orders placed (including cancelled orders).
+        data_type: NUMBER(18,0)
+
+      - name: NET_ORDER_COUNT
+        description: Net number of orders excluding cancellations.
+        data_type: NUMBER(18,0)
+
+      - name: CANCELLED_ORDER_COUNT
+        description: Number of orders that were cancelled.
+        data_type: NUMBER(18,0)
+
+      # Item Count Metrics
+      - name: TOTAL_ITEM_COUNT
+        description: Total count of line items across all orders.
+        data_type: NUMBER(18,0)
+
+      - name: NET_ITEM_COUNT
+        description: Net count of line items excluding cancelled orders.
+        data_type: NUMBER(18,0)
+
+      # Calculated Performance Metrics
+      - name: AVG_ORDER_VALUE
+        description: Average order value calculated as total revenue divided by total order count.
+        data_type: NUMBER(33,2)
+
+      - name: MARGIN_PERCENTAGE
+        description: Margin percentage calculated as (total margin / total revenue) * 100.
+        data_type: NUMBER(38,2)
+
+      - name: DISCOUNT_PERCENTAGE
+        description: Discount percentage calculated as (total discount / total gross amount) * 100.
+        data_type: NUMBER(38,2)
+
+      - name: CANCELLATION_RATE
+        description: Order cancellation rate calculated as (cancelled orders / total orders) * 100.
+        data_type: NUMBER(38,2)
+
+      # Metadata
+      - name: LAST_UPDATED_AT
+        description: Timestamp when this record was last updated/refreshed.
+        data_type: TIMESTAMP_NTZ(9)
+
+  - name: stg_customers
+    description: >
+      Staging table for customer data. This model cleanses and standardizes raw customer 
+      information from the source system, preparing it for downstream dimensional modeling. 
+      Contains core customer attributes including contact information, segmentation, and 
+      activity status.
+    
+    meta:
+      owner: data_team
+      schema: OMNI_SHOP.STG
+      source_table: OMNI_SHOP.RAW.CUSTOMERS_RAW
+      layer: staging
+
+    columns:
+      # Primary Key
+      - name: CUSTOMER_ID
+        description: Unique identifier for the customer from the source system. Primary key for this table.
+        data_type: VARCHAR(50)
+        tests:
+          - unique
+          - not_null
+
+      # Customer Name Attributes
+      - name: FIRST_NAME
+        description: Customer's first name.
+        data_type: VARCHAR(100)
+        tests:
+          - not_null
+
+      - name: LAST_NAME
+        description: Customer's last name.
+        data_type: VARCHAR(100)
+        tests:
+          - not_null
+
+      - name: FULL_NAME
+        description: Customer's full name, typically concatenated as FIRST_NAME + LAST_NAME.
+        data_type: VARCHAR(201)
+        tests:
+          - not_null
+
+      # Contact Information
+      - name: EMAIL_ADDRESS
+        description: Customer's primary email address.
+        data_type: VARCHAR(255)
+        tests:
+          - not_null
+
+      - name: PHONE_NUMBER
+        description: Customer's phone number. May be null if not provided.
+        data_type: VARCHAR(20)
+
+      - name: HAS_PHONE
+        description: Boolean flag indicating whether the customer has a phone number on file.
+        data_type: BOOLEAN
+
+      - name: EMAIL_DOMAIN
+        description: Domain portion of the customer's email address (e.g., gmail.com, yahoo.com). Extracted for analytics purposes.
+        data_type: VARCHAR(16777216)
+
+      # Timestamps
+      - name: CREATED_AT
+        description: Timestamp when the customer record was created in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: UPDATED_AT
+        description: Timestamp when the customer record was last updated in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+      # Status & Segmentation
+      - name: IS_ACTIVE
+        description: Boolean flag indicating whether the customer account is currently active.
+        data_type: BOOLEAN
+
+      - name: CUSTOMER_SEGMENT
+        description: Customer segment classification based on business rules (e.g., Premium, Standard, Basic, New).
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      - name: SEGMENT_PRIORITY
+        description: Numeric priority ranking of the customer segment (lower number = higher priority). Used for tiered service levels.
+        data_type: NUMBER(1,0)
+        tests:
+          - not_null
+
+      # Calculated Tenure Metrics
+      - name: CUSTOMER_TENURE_DAYS
+        description: Number of days since the customer record was created. Calculated as CURRENT_DATE - CREATED_AT.
+        data_type: NUMBER(9,0)
+
+      - name: DAYS_SINCE_LAST_UPDATE
+        description: Number of days since the customer record was last updated. Useful for identifying stale records.
+        data_type: NUMBER(9,0)
+
+  - name: stg_inventory
+    description: >
+      Staging table for inventory data. This model cleanses and standardizes raw inventory 
+      records from the source system, capturing current stock levels by product and warehouse. 
+      Used for inventory management, stock monitoring, and supply chain analytics.
+    
+    meta:
+      owner: data_team
+      schema: OMNI_SHOP.STG
+      source_table: OMNI_SHOP.RAW.INVENTORY_RAW
+      layer: staging
+      grain: One row per product per warehouse
+
+    columns:
+      # Primary Key
+      - name: INVENTORY_ID
+        description: Unique identifier for the inventory record. Primary key for this table.
+        data_type: VARCHAR(50)
+        tests:
+          - unique
+          - not_null
+
+      # Foreign Keys
+      - name: PRODUCT_ID
+        description: Foreign key referencing the product. Links to stg_products.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      - name: WAREHOUSE_ID
+        description: Foreign key referencing the warehouse location. Links to warehouse dimension.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      # Quantity Metrics
+      - name: ON_HAND_QUANTITY
+        description: Total physical quantity of the product currently in the warehouse.
+        data_type: NUMBER(38,0)
+        tests:
+          - not_null
+
+      - name: RESERVED_QUANTITY
+        description: Quantity reserved for pending orders or allocations, not available for new sales.
+        data_type: NUMBER(38,0)
+        tests:
+          - not_null
+
+      - name: SAFETY_STOCK_QUANTITY
+        description: Minimum stock level threshold. When on-hand quantity falls below this level, replenishment is triggered.
+        data_type: NUMBER(38,0)
+        tests:
+          - not_null
+
+      - name: AVAILABLE_QUANTITY
+        description: Quantity available for sale, calculated as ON_HAND_QUANTITY - RESERVED_QUANTITY.
+        data_type: NUMBER(38,0)
+        tests:
+          - not_null
+
+      # Status Flags
+      - name: IS_BELOW_SAFETY_STOCK
+        description: Boolean flag indicating whether current on-hand quantity is below the safety stock threshold. Used for reorder alerts.
+        data_type: BOOLEAN
+
+      # Timestamps
+      - name: LAST_RESTOCKED_AT
+        description: Timestamp when the inventory was last replenished/restocked.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: UPDATED_AT
+        description: Timestamp when the inventory record was last updated in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+  - name: stg_order_items
+    description: >
+      Staging table for order line item data. This model cleanses and standardizes raw 
+      order item records from the source system, capturing individual product lines within 
+      each order. Contains pricing, quantity, and discount information at the line item level. 
+      Used as a foundation for order analytics, revenue calculations, and product performance analysis.
+    
+    meta:
+      owner: data_team
+      schema: OMNI_SHOP.STG
+      source_table: OMNI_SHOP.RAW.ORDER_ITEMS_RAW
+      layer: staging
+      grain: One row per line item per order
+
+    columns:
+      # Primary Key
+      - name: ORDER_ITEM_ID
+        description: Unique identifier for the order line item. Primary key for this table.
+        data_type: VARCHAR(50)
+        tests:
+          - unique
+          - not_null
+
+      # Foreign Keys
+      - name: ORDER_ID
+        description: Foreign key referencing the parent order. Links to stg_orders.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      - name: PRODUCT_ID
+        description: Foreign key referencing the product. Links to stg_products.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      # Quantity & Pricing
+      - name: QUANTITY
+        description: Number of units of the product ordered in this line item.
+        data_type: NUMBER(38,0)
+        tests:
+          - not_null
+
+      - name: UNIT_PRICE
+        description: Price per unit of the product at the time of order.
+        data_type: NUMBER(14,2)
+        tests:
+          - not_null
+
+      - name: DISCOUNT_AMOUNT
+        description: Total discount amount applied to this line item.
+        data_type: NUMBER(14,2)
+        tests:
+          - not_null
+
+      - name: LINE_TOTAL
+        description: Final line total from the source system after discounts.
+        data_type: NUMBER(14,2)
+        tests:
+          - not_null
+
+      # Calculated Amounts
+      - name: GROSS_AMOUNT
+        description: Gross amount before discounts, calculated as QUANTITY * UNIT_PRICE.
+        data_type: NUMBER(38,2)
+        tests:
+          - not_null
+
+      - name: CALCULATED_LINE_TOTAL
+        description: Calculated line total derived as GROSS_AMOUNT - DISCOUNT_AMOUNT. Used for validation against source LINE_TOTAL.
+        data_type: NUMBER(38,2)
+        tests:
+          - not_null
+
+      # Data Quality Flags
+      - name: HAS_LINE_TOTAL_MISMATCH
+        description: >
+          Boolean flag indicating a discrepancy between the source LINE_TOTAL and 
+          CALCULATED_LINE_TOTAL. True indicates potential data quality issues requiring investigation.
+        data_type: BOOLEAN
+
+      # Discount Metrics
+      - name: DISCOUNT_PERCENTAGE
+        description: Discount expressed as a percentage of the gross amount, calculated as (DISCOUNT_AMOUNT / GROSS_AMOUNT) * 100.
+        data_type: NUMBER(26,2)
+        tests:
+          - not_null
+
+      - name: HAS_DISCOUNT
+        description: Boolean flag indicating whether a discount was applied to this line item.
+        data_type: BOOLEAN
+
+      # Timestamps
+      - name: CREATED_AT
+        description: Timestamp when the order item record was created in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: UPDATED_AT
+        description: Timestamp when the order item record was last updated in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+  - name: stg_products
+    description: >
+      Staging table for product data. This model cleanses and standardizes raw product 
+      information from the source system, capturing core product attributes including 
+      categorization, pricing, and margin data. Serves as the foundation for the 
+      product dimension and downstream analytics.
+    
+    meta:
+      owner: data_team
+      schema: OMNI_SHOP.STG
+      source_table: OMNI_SHOP.RAW.PRODUCTS_RAW
+      layer: staging
+      grain: One row per product
+
+    columns:
+      # Primary Key
+      - name: PRODUCT_ID
+        description: Unique identifier for the product from the source system. Primary key for this table.
+        data_type: VARCHAR(50)
+        tests:
+          - unique
+          - not_null
+
+      # Product Attributes
+      - name: PRODUCT_NAME
+        description: Name of the product as displayed to customers.
+        data_type: VARCHAR(255)
+        tests:
+          - not_null
+
+      # Categorization
+      - name: CATEGORY
+        description: Primary category classification for the product (e.g., Electronics, Apparel, Home & Garden).
+        data_type: VARCHAR(100)
+        tests:
+          - not_null
+
+      - name: SUBCATEGORY
+        description: Secondary category classification providing more granular product grouping within the parent category.
+        data_type: VARCHAR(100)
+        tests:
+          - not_null
+
+      - name: BRAND
+        description: Brand or manufacturer name associated with the product.
+        data_type: VARCHAR(100)
+        tests:
+          - not_null
+
+      # Pricing
+      - name: LIST_PRICE
+        description: Standard retail/list price of the product.
+        data_type: NUMBER(12,2)
+        tests:
+          - not_null
+
+      - name: COST_PRICE
+        description: Cost price or wholesale price of the product (COGS per unit).
+        data_type: NUMBER(12,2)
+        tests:
+          - not_null
+
+      # Margin Metrics
+      - name: GROSS_MARGIN
+        description: Gross margin per unit, calculated as LIST_PRICE - COST_PRICE.
+        data_type: NUMBER(13,2)
+        tests:
+          - not_null
+
+      - name: MARGIN_PERCENTAGE
+        description: Gross margin expressed as a percentage of the list price, calculated as (GROSS_MARGIN / LIST_PRICE) * 100.
+        data_type: NUMBER(25,2)
+        tests:
+          - not_null
+
+      # Status
+      - name: IS_ACTIVE
+        description: Boolean flag indicating whether the product is currently active and available for sale.
+        data_type: BOOLEAN
+
+      # Timestamps
+      - name: CREATED_AT
+        description: Timestamp when the product record was created in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: UPDATED_AT
+        description: Timestamp when the product record was last updated in the source system.
+        data_type: TIMESTAMP_NTZ(9)
+
+  - name: stg_returns
+    description: >
+      Staging table for product return data. This model cleanses and standardizes raw 
+      return records from the source system, capturing return requests, reasons, statuses, 
+      and refund information. Used for returns analysis, customer experience optimization, 
+      and product quality monitoring.
+    
+    meta:
+      owner: data_team
+      schema: OMNI_SHOP.STG
+      source_table: OMNI_SHOP.RAW.RETURNS_RAW
+      layer: staging
+      grain: One row per return request
+
+    columns:
+      # Primary Key
+      - name: RETURN_ID
+        description: Unique identifier for the return request. Primary key for this table.
+        data_type: VARCHAR(50)
+        tests:
+          - unique
+          - not_null
+
+      # Foreign Keys
+      - name: ORDER_ID
+        description: Foreign key referencing the original order. Links to stg_orders.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      - name: ORDER_ITEM_ID
+        description: Foreign key referencing the specific order line item being returned. Links to stg_order_items.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      - name: PRODUCT_ID
+        description: Foreign key referencing the product being returned. Links to stg_products.
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      # Return Reason Attributes
+      - name: RETURN_REASON
+        description: Detailed reason provided for the return (e.g., "Item damaged during shipping", "Wrong size ordered").
+        data_type: VARCHAR(255)
+        tests:
+          - not_null
+
+      - name: RETURN_REASON_CATEGORY
+        description: Standardized category for the return reason (e.g., Defective, Wrong Item, Changed Mind, Damaged).
+        data_type: VARCHAR(20)
+        tests:
+          - not_null
+
+      # Status Attributes
+      - name: RETURN_STATUS
+        description: Current status of the return request (e.g., Requested, Approved, Received, Refunded, Rejected).
+        data_type: VARCHAR(50)
+        tests:
+          - not_null
+
+      - name: IS_RETURN_COMPLETED
+        description: Boolean flag indicating whether the return process has been fully completed.
+        data_type: BOOLEAN
+
+      - name: IS_RETURN_PENDING
+        description: Boolean flag indicating whether the return is still pending/in progress.
+        data_type: BOOLEAN
+
+      # Refund Attributes
+      - name: REFUND_AMOUNT
+        description: Amount refunded to the customer for this return.
+        data_type: NUMBER(14,2)
+        tests:
+          - not_null
+
+      - name: HAS_REFUND
+        description: Boolean flag indicating whether a refund has been issued for this return.
+        data_type: BOOLEAN
+
+      # Timestamps
+      - name: RETURN_REQUESTED_AT
+        description: Timestamp when the return was initially requested by the customer.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: RETURN_REQUESTED_DATE
+        description: Date when the return was initially requested (date only, no time component).
+        data_type: DATE
+
+      - name: RETURN_PROCESSED_AT
+        description: Timestamp when the return was fully processed/completed.
+        data_type: TIMESTAMP_NTZ(9)
+
+      - name: IS_PROCESSED
+        description: Boolean flag indicating whether the return has been processed.
+        data_type: BOOLEAN
+
+      # Processing Time Metrics
+      - name: PROCESSING_TIME_HOURS
+        description: Time taken to process the return measured in hours (RETURN_PROCESSED_AT - RETURN_REQUESTED_AT).
+        data_type: NUMBER(9,0)
+
+      - name: PROCESSING_TIME_DAYS
+        description: Time taken to process the return measured in days. Used for SLA tracking and operational reporting.
+        data_type: NUMBER(9,0)
