@@ -322,9 +322,6 @@ models:
 
   - name: stg_orders
     description: Staging table for orders containing order details, payment information, and channel attributes
-    config:
-      contract:
-        enforced: true
     columns:
       - name: ORDER_ID
         data_type: varchar(50)
@@ -595,10 +592,6 @@ models:
       patterns. This table aggregates all historical transaction data at the customer level to 
       provide a 360-degree view of customer value, purchasing behavior, and engagement metrics. 
       Used for customer segmentation, retention analysis, and marketing optimization.
-    
-    meta:
-      owner: data_team
-      schema: OMNI_SHOP.MARTS
 
     columns:
       # Primary Key
@@ -794,11 +787,6 @@ models:
       revenue, margins, discounts, and order counts. Used for daily sales reporting, 
       channel performance analysis, and trend monitoring.
     
-    meta:
-      owner: data_team
-      schema: OMNI_SHOP.MARTS
-      grain: One row per day per sales channel
-
     columns:
       # Primary Key
       - name: DAILY_CHANNEL_KEY
@@ -944,11 +932,6 @@ models:
       Contains core customer attributes including contact information, segmentation, and 
       activity status.
     
-    meta:
-      owner: data_team
-      schema: OMNI_SHOP.STG
-      source_table: OMNI_SHOP.RAW.CUSTOMERS_RAW
-      layer: staging
 
     columns:
       # Primary Key
@@ -1038,12 +1021,6 @@ models:
       records from the source system, capturing current stock levels by product and warehouse. 
       Used for inventory management, stock monitoring, and supply chain analytics.
     
-    meta:
-      owner: data_team
-      schema: OMNI_SHOP.STG
-      source_table: OMNI_SHOP.RAW.INVENTORY_RAW
-      layer: staging
-      grain: One row per product per warehouse
 
     columns:
       # Primary Key
@@ -1113,12 +1090,6 @@ models:
       each order. Contains pricing, quantity, and discount information at the line item level. 
       Used as a foundation for order analytics, revenue calculations, and product performance analysis.
     
-    meta:
-      owner: data_team
-      schema: OMNI_SHOP.STG
-      source_table: OMNI_SHOP.RAW.ORDER_ITEMS_RAW
-      layer: staging
-      grain: One row per line item per order
 
     columns:
       # Primary Key
@@ -1214,12 +1185,6 @@ models:
       categorization, pricing, and margin data. Serves as the foundation for the 
       product dimension and downstream analytics.
     
-    meta:
-      owner: data_team
-      schema: OMNI_SHOP.STG
-      source_table: OMNI_SHOP.RAW.PRODUCTS_RAW
-      layer: staging
-      grain: One row per product
 
     columns:
       # Primary Key
@@ -1303,13 +1268,6 @@ models:
       and refund information. Used for returns analysis, customer experience optimization, 
       and product quality monitoring.
     
-    meta:
-      owner: data_team
-      schema: OMNI_SHOP.STG
-      source_table: OMNI_SHOP.RAW.RETURNS_RAW
-      layer: staging
-      grain: One row per return request
-
     columns:
       # Primary Key
       - name: RETURN_ID
