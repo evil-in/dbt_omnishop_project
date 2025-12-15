@@ -169,6 +169,7 @@ models:
         data_type: VARCHAR(50)
         tests:
           - not_null
+          - unique
 
       # Product Identifiers
       - name: PRODUCT_NAME
